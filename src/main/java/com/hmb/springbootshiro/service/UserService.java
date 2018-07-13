@@ -24,4 +24,8 @@ public class UserService {
     public Set<String> selectPermissionByUsername(String username) {
         return userDao.selectPermissionByUsername(username);
     }
+
+    public boolean add(String username, String password1) {
+        return userDao.add(username,password1);
+    }
 }

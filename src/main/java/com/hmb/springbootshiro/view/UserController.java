@@ -12,13 +12,13 @@ import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.crypto.CryptoException;
+import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.subject.Subject;
+import org.apache.shiro.util.ByteSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.util.Set;
 
@@ -27,6 +27,7 @@ import java.util.Set;
 public class UserController {
     @Autowired
     private UserService userService;
+
     @PostMapping("/login")
     public Page login(String username,String password) throws UnsupportedEncodingException {
         Subject currentUser = SecurityUtils.getSubject();
@@ -49,6 +50,26 @@ public class UserController {
         }
         return new Page(200,"登录成功",0,null);
     }
+
+    @RequestMapping("/addUser")
+    public boolean addUser(String username,String password){
+        System.out.println("======addUser=======");
+        System.out.println(username);
+        //密码加密并set
+        String password1 = SysMd5(username, password);
+        boolean b = userService.add(username,password1);//将用户数据插入数据库
+        return b;
+    }
+
+    //添加user的密码加密方法
+    public  String  SysMd5(String username,String password) {
+        String hashAlgorithmName = "MD5";//加密方式
+        ByteSource salt = ByteSource.Util.bytes(username);//以账号作为盐值
+        int hashIterations = 1024;//加密1024次
+        SimpleHash hash = new SimpleHash(hashAlgorithmName,password,salt,hashIterations);
+        return hash.toString();
+    }
+
     @GetMapping("/article")
     public Page article() {
         Subject subject = SecurityUtils.getSubject();
@@ -70,7 +91,6 @@ public class UserController {
         }catch (CryptoException e){
             throw new ExpiredCredentialsException("您没有登录");
         }
-
     }
 
     @GetMapping("/require_role")

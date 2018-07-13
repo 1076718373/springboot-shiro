@@ -16,4 +16,6 @@ public interface UserDao {
     Set<String> selectRoleByUsername(String username);
 
     Set<String> selectPermissionByUsername(String username);
+
+    boolean add(@Param("username") String username,@Param("password") String password);
 }

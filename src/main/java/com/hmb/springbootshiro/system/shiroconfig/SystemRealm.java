@@ -5,6 +5,7 @@ import com.hmb.springbootshiro.service.UserService;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.ByteSource;
@@ -23,8 +24,6 @@ public class SystemRealm extends AuthorizingRealm {
         System.out.println("--------权限配置-------");
         SimpleAuthorizationInfo authorizationInfo = new SimpleAuthorizationInfo();
         String username = (String) principalCollection.getPrimaryPrincipal();
-
-
         //注入角色(查询所有的角色注入控制器）
         Set<String> roles = userService.selectRoleByUsername(username);
         for (String role: roles){
@@ -45,6 +44,7 @@ public class SystemRealm extends AuthorizingRealm {
         //2. 从 UsernamePasswordToken 中来获取 username
         String username = upToken.getUsername();
         System.out.println(upToken.getPassword());
+        Object credentials =upToken.getPassword();
         User user =  null;
         try {
             user = userService.selectUser(username);
@@ -60,19 +60,21 @@ public class SystemRealm extends AuthorizingRealm {
         String realmName = getName();
         //4). 盐值.
         ByteSource credentialsSalt = ByteSource.Util.bytes(username);
-
-//        SimpleAuthenticationInfo info = null; //new SimpleAuthenticationInfo(principal, credentials, realmName);
-//        info = new SimpleAuthenticationInfo(username, user.getPassword(), credentialsSalt, realmName);
         SimpleAuthenticationInfo info = null; //new SimpleAuthenticationInfo(principal, credentials, realmName);
-        info = new SimpleAuthenticationInfo(username,user.getPassword(),getName());
+        info = new SimpleAuthenticationInfo(username,credentials,credentialsSalt,getName());
+        System.out.println(info);
         return info;
     }
 
-//    @Test
-//    public void test() {
-//        ByteSource credentialsSalt = ByteSource.Util.bytes("sandy");
-//        SimpleAuthenticationInfo info = null; //new SimpleAuthenticationInfo(principal, credentials, realmName);
-//        info = new SimpleAuthenticationInfo("sandy", "123456", credentialsSalt, getName());
-//        System.out.println(info);
-//    }
+
+    public static void main(String[] args) {
+        String hashAlgorithmName = "MD5";
+        Object credentials = "123456";
+        ByteSource credentialsSalt = ByteSource.Util.bytes("sandy");
+        int hashIterations = 1024;
+        Object result = new SimpleHash(hashAlgorithmName, credentials, credentialsSalt, hashIterations);
+        System.out.println(result);
+    }
+
+
 }

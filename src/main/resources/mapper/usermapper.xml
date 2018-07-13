@@ -7,6 +7,9 @@
         <result column="userName" jdbcType="VARCHAR" property="username" />
         <result column="passWord" jdbcType="VARCHAR" property="password" />
     </resultMap>
+    <insert id="add">
+        insert into user(username, password) VALUE (#{username},#{password})
+    </insert>
     <select id="selectUser" resultType="com.hmb.springbootshiro.pojo.User">
         select *  from user where username=#{username}
     </select>
