@@ -8,21 +8,32 @@ import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSource
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 import javax.servlet.Filter;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 @Configuration
 public class ShiroConfig {
+
+    @Bean(name = "shiroRealm")
+    @DependsOn("lifecycleBeanPostProcessor")
+    public SystemRealm shiroRealm(@Qualifier("hashedCredentialsMatcher") HashedCredentialsMatcher matcher) {
+        SystemRealm realm = new SystemRealm();
+        realm.setAuthorizationCachingEnabled(false);
+        realm.setCredentialsMatcher(matcher);
+        return realm;
+    }
     @Bean("securityManager")
-    public DefaultWebSecurityManager getManager(SystemRealm realm) {
+    public DefaultWebSecurityManager securityManager(@Qualifier("hashedCredentialsMatcher") HashedCredentialsMatcher matcher) {
 
         DefaultWebSecurityManager manager = new DefaultWebSecurityManager();
         // 使用自己的realm
-        manager.setRealm(realm);
+        manager.setRealm(shiroRealm(matcher));
 
         /*
          * 关闭shiro自带的session，详情见文档
@@ -37,25 +48,16 @@ public class ShiroConfig {
     }
 
     @Bean("shiroFilter")
-    public ShiroFilterFactoryBean factory(DefaultWebSecurityManager securityManager) {
+    public ShiroFilterFactoryBean factory(@Qualifier("hashedCredentialsMatcher") HashedCredentialsMatcher matcher) {
         ShiroFilterFactoryBean factoryBean = new ShiroFilterFactoryBean();
-
-        // 添加自己的过滤器并且取名为jwt
-        Map<String, Filter> filterMap = new HashMap<>();
-        filterMap.put("jwt", new MyShiroFilter());
-        factoryBean.setFilters(filterMap);
-
-        factoryBean.setSecurityManager(securityManager);
-
+        factoryBean.setSecurityManager(securityManager(matcher));
         Map<String, String> filterRuleMap = new HashMap<>();
-        // 所有请求通过我们自己的JWT Filter
-
-        filterRuleMap.put("/login","anon");
-        filterRuleMap.put("/**", "jwt");
-
+        filterRuleMap.put("user/login","anon");
         factoryBean.setFilterChainDefinitionMap(filterRuleMap);
         return factoryBean;
     }
+
+
 
     /**
      * 下面的代码是添加注解支持
@@ -82,17 +84,20 @@ public class ShiroConfig {
         return advisor;
     }
     /**
-     * 密码匹配凭证管理器
-     *
-     * @return
+     * 密码校验规则HashedCredentialsMatcher
+     * 这个类是为了对密码进行编码的 ,
+     * 防止密码在数据库里明码保存 , 当然在登陆认证的时候 ,
+     * 这个类也负责对form里输入的密码进行编码
+     * 处理认证匹配处理器：如果自定义需要实现继承HashedCredentialsMatcher
      */
-    @Bean(name = "hashedCredentialsMatcher")
+    @Bean("hashedCredentialsMatcher")
     public HashedCredentialsMatcher hashedCredentialsMatcher() {
-        HashedCredentialsMatcher hashedCredentialsMatcher = new HashedCredentialsMatcher();
-        // 采用MD5方式加密
-        hashedCredentialsMatcher.setHashAlgorithmName("MD5");
-        // 设置加密次数
-        hashedCredentialsMatcher.setHashIterations(1024);
-        return hashedCredentialsMatcher;
+        HashedCredentialsMatcher credentialsMatcher = new HashedCredentialsMatcher();
+        //指定加密方式为MD5
+        credentialsMatcher.setHashAlgorithmName("MD5");
+        //加密次数
+        credentialsMatcher.setHashIterations(1024);
+        credentialsMatcher.setStoredCredentialsHexEncoded(true);
+        return credentialsMatcher;
     }
 }

@@ -3,10 +3,7 @@ package com.hmb.springbootshiro.view;
 import com.hmb.springbootshiro.pojo.Page;
 import com.hmb.springbootshiro.service.UserService;
 import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.ExpiredCredentialsException;
-import org.apache.shiro.authc.UnknownAccountException;
-import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.annotation.Logical;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -17,10 +14,9 @@ import org.apache.shiro.subject.Subject;
 import org.apache.shiro.util.ByteSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
@@ -31,26 +27,26 @@ public class UserController {
     @PostMapping("/login")
     public Page login(String username,String password) throws UnsupportedEncodingException {
         Subject currentUser = SecurityUtils.getSubject();
+        Map<Integer,String> map = new HashMap<>();
         if (!currentUser.isAuthenticated()) {
             // 把用户名和密码封装为 UsernamePasswordToken 对象
             UsernamePasswordToken token = new UsernamePasswordToken(username, password);
             // rememberme
             token.setRememberMe(true);
             try {
-                System.out.println("1. " + token.getPassword());
                 // 执行登录.
                 currentUser.login(token);
-            }
-            // 所有认证时异常的父类.
-            catch (AuthenticationException ae) {
-                //unexpected condition?  error?
-                System.out.println("登录失败: " + ae.getMessage());
-                return new Page(201,"登录失败",0,ae.getMessage());
+            }catch (IncorrectCredentialsException e) {
+                map.put(204, "密码错误");
+            } catch (LockedAccountException e) {
+                map.put(205, "登录失败，该用户已被冻结");
+            } catch (AuthenticationException e) {
+                map.put(206, "该用户不存在");
             }
         }
         return new Page(200,"登录成功",0,null);
-    }
 
+    }
     @RequestMapping("/addUser")
     public boolean addUser(String username,String password){
         System.out.println("======addUser=======");
