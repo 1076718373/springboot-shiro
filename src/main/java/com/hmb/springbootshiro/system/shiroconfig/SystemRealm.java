@@ -5,7 +5,6 @@ import com.hmb.springbootshiro.service.UserService;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
-import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.ByteSource;
@@ -54,7 +53,6 @@ public class SystemRealm extends AuthorizingRealm {
         //3. 调用数据库的方法, 从数据库中查询 username 对应的用户记录
         System.out.println("从数据库中获取 username: " + username + " 所对应的用户信息.");
         System.out.println("从数据库中获取 username: " + user.toString() + " 所对应的用户信息.");
-
         String realmName = getName();
         //4). 盐值.
         ByteSource credentialsSalt = ByteSource.Util.bytes(username);
